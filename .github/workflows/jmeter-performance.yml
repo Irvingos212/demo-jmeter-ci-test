@@ -1,0 +1,54 @@
+name: Run JMeter Performance Tests
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  # Permite también ejecutar la prueba de forma manual desde la pestaña Actions de GitHub
+  workflow_dispatch:
+
+jobs:
+  jmeter-load-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Descargar el código del repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Configurar Java (JMeter requiere Java 17 o superior en versiones recientes)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # 3. Descargar e instalar Apache JMeter (ej. versión 5.6.3)
+      - name: Install Apache JMeter
+        run: |
+          JMETER_VERSION="5.6.3"
+          wget https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-$JMETER_VERSION.tgz
+          tar -xzf apache-jmeter-$JMETER_VERSION.tgz
+          echo "$PWD/apache-jmeter-$JMETER_VERSION/bin" >> $GITHUB_PATH
+
+      # 4. Verificar la instalación de JMeter
+      - name: Verify JMeter version
+        run: jmeter -v
+
+      # 5. Ejecutar la prueba de JMeter en modo Non-GUI
+      - name: Run JMeter Test
+        run: |
+          mkdir -p jmeter-results
+          jmeter -n \
+            -t tests/load-test.jmx \
+            -l jmeter-results/results.jtl \
+            -e -o jmeter-results/html-report
+
+      # 6. Subir los reportes y resultados como artefactos de GitHub
+      - name: Upload JMeter Test Results
+        uses: actions/upload-artifact@v4
+        if: always() # Se ejecuta aunque la prueba falle (por ejemplo, si los umbrales de error superan lo esperado)
+        with:
+          name: jmeter-html-report
+          path: jmeter-results/
