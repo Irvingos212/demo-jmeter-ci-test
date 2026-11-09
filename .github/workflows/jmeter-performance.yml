@@ -41,7 +41,7 @@ jobs:
         run: |
           mkdir -p jmeter-results
           jmeter -n \
-            -t tests/load-test.jmx \
+            -t tests/demo-test.jmx \
             -l jmeter-results/results.jtl \
             -e -o jmeter-results/html-report
 
